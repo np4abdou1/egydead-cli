@@ -9,7 +9,7 @@ from .title import parse_title
 
 def main():
     parser = argparse.ArgumentParser(description='EgyDead CLI - Search and extract download URLs')
-    parser.add_argument('command', nargs='?', choices=['search', 'resolve', 'scrape', 'interactive'],
+    parser.add_argument('command', nargs='?', choices=['search', 'resolve', 'scrape', 'interactive', 'tui'],
                         help='Command to run (default: interactive)')
     parser.add_argument('arg', nargs='?', help='Search query or URL')
     parser.add_argument('--limit', type=int, default=10, help='Result limit (search/scrape)')
@@ -17,8 +17,10 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.command or args.command == 'interactive':
-        print('Interactive mode not yet implemented. Use: python -m egydead.cli search <query>')
+    if not args.command or args.command in ('interactive', 'tui'):
+        from .tui import EgyDeadApp
+        app = EgyDeadApp()
+        app.run()
         return
 
     if args.command == 'search':
