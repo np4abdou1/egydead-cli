@@ -7,13 +7,15 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "bun run lib/test.js",
+    "start": "bun run index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
+  "module": "index.js",
   "dependencies": {
-    "inquirer": "^8.2.7"
+    "@opentui/core": "^0.3.4"
   }
 }

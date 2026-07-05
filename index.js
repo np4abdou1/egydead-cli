@@ -1,11 +1,12 @@
-#!/usr/bin/env node
-const { search } = require('./lib/search');
-const { resolve, deepResolveDownload } = require('./lib/resolve');
-const { interactive } = require('./lib/interactive');
+#!/usr/bin/env bun
+import { search } from './lib/search.js';
+import { resolve, deepResolveDownload } from './lib/resolve.js';
+import { startTUI } from './lib/app.js';
 
 const argv = process.argv.slice(2);
 const command = argv[0];
 const isDeep = argv.includes('--deep');
+const isHeadless = argv.includes('--headless');
 
 function getArg(name) {
   const idx = argv.indexOf(name);
@@ -16,6 +17,8 @@ let arg = null;
 for (let i = 1; i < argv.length; i++) {
   if (argv[i] === '--limit') {
     i++;
+  } else if (argv[i] === '--deep' || argv[i] === '--headless') {
+    // skip flags
   } else if (!argv[i].startsWith('--')) {
     arg = argv[i];
     break;
@@ -34,15 +37,20 @@ async function deepResolveDownloads(downloads) {
 }
 
 async function main() {
+  // Default: launch TUI
   if (!command || command === 'interactive') {
-    await interactive();
-    return;
+    if (!isHeadless) {
+      const renderer = await startTUI();
+      return;
+    }
+    // Fall through to old interactive if --headless
   }
 
+  // Headless mode (old CLI commands)
   switch (command) {
     case 'search': {
       if (!arg) {
-        console.error('Usage: node index.js search <query> [--limit N]');
+        console.error('Usage: bun index.js search <query> [--limit N]');
         process.exit(1);
       }
       const limit = parseInt(getArg('--limit'), 10) || 10;
@@ -53,7 +61,7 @@ async function main() {
 
     case 'resolve': {
       if (!arg) {
-        console.error('Usage: node index.js resolve <url> [--deep]');
+        console.error('Usage: bun index.js resolve <url> [--deep]');
         process.exit(1);
       }
       const result = await resolve(arg);
@@ -66,7 +74,7 @@ async function main() {
 
     case 'scrape': {
       if (!arg) {
-        console.error('Usage: node index.js scrape <query> [--limit N] [--deep]');
+        console.error('Usage: bun index.js scrape <query> [--limit N] [--deep]');
         process.exit(1);
       }
       const limit = parseInt(getArg('--limit'), 10) || 5;
@@ -85,11 +93,11 @@ async function main() {
 
     default:
       console.error('Usage:');
-      console.error('  node index.js                                       Interactive mode');
-      console.error('  node index.js interactive                           Interactive mode');
-      console.error('  node index.js search <query> [--limit N]            Search for content');
-      console.error('  node index.js resolve <url> [--deep]                Get download servers from a page');
-      console.error('  node index.js scrape <query> [--limit N] [--deep]   Search and resolve download links');
+      console.error('  bun index.js                                       Launch TUI (default)');
+      console.error('  bun index.js --headless interactive                Old interactive mode');
+      console.error('  bun index.js search <query> [--limit N]            Search for content');
+      console.error('  bun index.js resolve <url> [--deep]                Get download servers from a page');
+      console.error('  bun index.js scrape <query> [--limit N] [--deep]   Search and resolve download links');
       process.exit(1);
   }
 }
