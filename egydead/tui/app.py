@@ -4,7 +4,7 @@ from typing import Optional
 
 from textual import on
 from textual.app import App, ComposeResult
-from textual.containers import Center, Vertical, Horizontal
+from textual.containers import Center, Vertical, Horizontal, ScrollableContainer
 from textual.screen import Screen, ModalScreen
 from textual.widgets import Header, Footer, Input, ListView, ListItem, Label, Static, Button
 
@@ -34,7 +34,7 @@ class SearchScreen(Screen):
     def on_input_submitted(self, event: Input.Submitted) -> None:
         query = event.value.strip()
         if query:
-            self.app.push_screen('results', ResultsScreen(query))
+            self.app.push_screen(ResultsScreen(query))
 
 
 class ResultsScreen(Screen):
@@ -73,6 +73,7 @@ class ResultsScreen(Screen):
             status = self.query_one('#results-status', Static)
             status.update(f'Results for "{self.query}" ({len(self.results)} found)')
             if list_view.children:
+                list_view.index = 0
                 list_view.focus()
             self._loading = False
         except Exception as e:
@@ -84,13 +85,13 @@ class ResultsScreen(Screen):
         item = event.item
         data = getattr(item, 'data', None)
         if data:
-            self.app.push_screen('content', ContentScreen(data))
+            self.app.push_screen(ContentScreen(data))
 
     def key_b(self):
         self.app.pop_screen()
 
     def key_h(self):
-        self.app.push_screen('history', HistoryScreen())
+        self.app.push_screen(HistoryScreen())
 
     BINDINGS = [
         ('b', 'b', 'Back'),
@@ -114,7 +115,7 @@ class ContentScreen(Screen):
         yield Center(
             Vertical(
                 Static('Resolving...', id='content-title', classes='content-title'),
-                Static('', id='content-body'),
+                ScrollableContainer(Static('', id='content-body')),
                 classes='content-container',
             ),
         )
@@ -141,9 +142,10 @@ class ContentScreen(Screen):
 
             title_w = self.query_one('#content-title', Static)
             title_w.update(f'[bold green]{english}[/]')
-            title_w.styles.border = ('rounded', 'green')
+            title_w.styles.border = ('round', 'green')
 
             body = self.query_one('#content-body', Static)
+            body.styles.overflow_y = 'auto'
             lines = []
 
             if self.data.get('servers'):
@@ -207,17 +209,17 @@ class ContentScreen(Screen):
             url = e['url'].lower()
             if next_str in url or f'e{next_ep["episode"]}' in url:
                 self.app.pop_screen()
-                self.app.push_screen('content', ContentScreen({'title': e['title'], 'url': e['url'], 'category': ''}))
+                self.app.push_screen(ContentScreen({'title': e['title'], 'url': e['url'], 'category': ''}))
                 return
         body = self.query_one('#content-body', Static)
         body.update(body.renderable + '\n[red]No next episode found.[/]')
 
     def key_e(self):
         if self.data and self.data.get('episodes') and not self._loading:
-            self.app.push_screen('episodes', EpisodeListScreen(self.data['episodes']))
+            self.app.push_screen(EpisodeListScreen(self.data['episodes']))
 
     def key_h(self):
-        self.app.push_screen('history', HistoryScreen())
+        self.app.push_screen(HistoryScreen())
 
     BINDINGS = [
         ('b', 'b', 'Back'),
@@ -256,6 +258,7 @@ class EpisodeListScreen(Screen):
             item.data = e
             list_view.append(item)
         if list_view.children:
+            list_view.index = 0
             list_view.focus()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
@@ -263,7 +266,7 @@ class EpisodeListScreen(Screen):
         data = getattr(item, 'data', None)
         if data:
             self.app.pop_screen()
-            self.app.push_screen('content', ContentScreen(data))
+            self.app.push_screen(ContentScreen(data))
 
     def key_b(self):
         self.app.pop_screen()
@@ -310,6 +313,7 @@ class HistoryScreen(Screen):
             item.data = e
             list_view.append(item)
         if list_view.children:
+            list_view.index = 0
             list_view.focus()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
@@ -317,7 +321,7 @@ class HistoryScreen(Screen):
         data = getattr(item, 'data', None)
         if data:
             self.app.pop_screen()
-            self.app.push_screen('content', ContentScreen(data))
+            self.app.push_screen(ContentScreen(data))
 
     def key_b(self):
         self.app.pop_screen()
