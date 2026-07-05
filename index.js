@@ -4,7 +4,6 @@ import { resolve, deepResolveDownload } from './lib/resolve.js';
 import { startTUI } from './lib/app.js';
 
 const argv = process.argv.slice(2);
-const command = argv[0];
 const isDeep = argv.includes('--deep');
 const isHeadless = argv.includes('--headless');
 
@@ -13,15 +12,20 @@ function getArg(name) {
   return idx !== -1 ? argv[idx + 1] : undefined;
 }
 
+// Find the first non-flag argument as the command
+let command = null;
 let arg = null;
-for (let i = 1; i < argv.length; i++) {
+let foundCmd = false;
+for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--limit') {
     i++;
   } else if (argv[i] === '--deep' || argv[i] === '--headless') {
     // skip flags
-  } else if (!argv[i].startsWith('--')) {
+  } else if (!argv[i].startsWith('--') && !foundCmd) {
+    command = argv[i];
+    foundCmd = true;
+  } else if (!argv[i].startsWith('--') && foundCmd && arg === null) {
     arg = argv[i];
-    break;
   }
 }
 
